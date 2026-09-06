@@ -1,170 +1,221 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
 
-# გვერდის ძირითადი პარამეტრები
-st.set_page_config(page_title="DIABLO", page_icon="💎", layout="centered")
+# გვერდის კონფიგურაცია DIABLO-ს სახელით
+st.set_page_config(page_title="DIABLO", layout="wide", initial_sidebar_state="collapsed")
 
-# Session State ცვლადების ინიციალიზაცია
-if 'total_assets' not in st.session_state:
-    st.session_state.total_assets = 2226.72
-if 'daily_income' not in st.session_state:
-    st.session_state.daily_income = 0.0
-if 'use_count' not in st.session_state:
-    st.session_state.use_count = 0
-
-# CSS სტილები
+# სტილები - ზუსტი მუქი დიზაინი და იისფერი აქცენტები
 st.markdown("""
-    <style>
-    .stApp { background-color: #0d0d0d; color: #ffffff; }
-    .logo-text { font-size: 28px; font-weight: bold; color: #ffffff; padding: 10px 0; }
-    .hero-banner {
-        background: linear-gradient(135deg, #051329 0%, #0a2246 50%, #000000 100%);
-        border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 15px;
-        border: 1px solid #1e293b;
+<style>
+    .stApp {
+        background-color: #0b0e11;
+        color: #ffffff;
     }
-    .banner-title { font-size: 32px; font-weight: 800; color: #3b82f6; }
-    .trade-card { background-color: #1a1a1a; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
-    .balance-card {
+    header, footer, #MainMenu {visibility: hidden;}
+    
+    .card-box {
+        background-color: #181a20;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #2b2f36;
+    }
+    
+    .purple-card {
         background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
-        border-radius: 12px; padding: 20px; color: white; margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 15px;
     }
-    .badge-green { background-color: #00c087; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; }
-    .badge-red { background-color: #ff3b30; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; }
-    .empty-state { text-align: center; color: #666666; padding: 40px 0; }
-    </style>
+
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        padding: 10px 16px;
+    }
+    
+    div[data-testid="stHorizontalBlock"] div:nth-child(1) button {
+        background-color: #0ecb81 !important;
+        color: white !important;
+    }
+    div[data-testid="stHorizontalBlock"] div:nth-child(2) button {
+        background-color: #f6465d !important;
+        color: white !important;
+    }
+    
+    .green-text { color: #0ecb81; font-weight: bold; }
+    .red-text { color: #f6465d; font-weight: bold; }
+    .sub-text { color: #848e9c; font-size: 12px; }
+</style>
 """, unsafe_allow_html=True)
 
-# ზედა ნავიგაცია
-col_head1, col_head2 = st.columns([4, 1])
-with col_head1:
-    st.markdown('<div class="logo-text">💎 DIABLO</div>', unsafe_allow_html=True)
-with col_head2:
-    st.write("💬 👤")
+# სესიის მონაცემები
+if "balance" not in st.session_state:
+    st.session_state.balance = 2226.72
+if "used_promo" not in st.session_state:
+    st.session_state.used_promo = False
+if "tab" not in st.session_state:
+    st.session_state.tab = "მთავარი გვერდი"
 
-# ქვედა მენიუ
-tab_home, tab_markets, tab_trade, tab_system, tab_assets = st.tabs([
-    "მთავარი გვერდი", "ბაზრები", "ვაჭრობა", "სისტემა", "აქტივები"
-])
+st.title("DIABLO")
 
-# ----------------- 1. მთავარი გვერდი -----------------
-with tab_home:
-    st.markdown('<div class="hero-banner"><div class="banner-title">DIABLO</div></div>', unsafe_allow_html=True)
-    st.caption("📢 sa****c2@gmail.com გილოცავთ პრიზის მოგებას...")
-    st.markdown('<div class="trade-card"><h3 style="margin:0;">სწრაფი ვაჭრობა</h3><p style="color: #888;">უსაფრთხო და მოსახერხებელი</p></div>', unsafe_allow_html=True)
+# ქვედა ნავიგაცია (5 სექცია)
+tabs = ["მთავარი გვერდი", "ბაზრები", "ვაჭრობა", "სისტემა", "აქტივები"]
+selected_tab = st.radio("", tabs, index=tabs.index(st.session_state.tab), horizontal=True)
+st.session_state.tab = selected_tab
+
+st.markdown("---")
+
+# 1. მთავარი გვერდი
+if st.session_state.tab == "მთავარი გვერდი":
+    st.markdown("""
+    <div class="card-box">
+        <h2 style="margin:0;">სწრაფი ვაჭრობა</h2>
+        <p class="sub-text">უსაფრთხო და მოსახერხებელი</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1: st.button("🔄 გამოტანა")
+    with col2: st.button("📥 ჩარიცხვა")
+    with col3: st.button("⚡ სწრაფი გაცვლა")
+    with col4: st.button("📱 უფრო მეტი")
+        
+    st.markdown("### ზრდის რეიტინგი")
+    
+    market_data = [
+        {"pair": "DASH / USDT", "price": "68.162", "change": "+4.07%"},
+        {"pair": "DOT / USDT", "price": "0.946", "change": "+3.50%"},
+        {"pair": "BCH / USDT", "price": "259.47", "change": "+1.34%"},
+    ]
+    
+    for item in market_data:
+        c1, c2, c3 = st.columns([2, 2, 1])
+        c1.write(f"**{item['pair']}**")
+        c2.write(item['price'])
+        c3.markdown(f"<span class='green-text'>{item['change']}</span>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin:5px 0; border-color:#2b2f36;'>", unsafe_allow_html=True)
+
+# 2. ბაზრები
+elif st.session_state.tab == "ბაზრები":
+    st.markdown("### დერივატივების კონტრაქტი")
+    
+    pairs = [
+        {"pair": "BTC/USDT", "vol": "VOL: 254144090.43", "price": "79784.12", "change": "-0.06%", "green": False},
+        {"pair": "ETH/USDT", "vol": "VOL: 217937486.54", "price": "2493.48", "change": "+0.52%", "green": True},
+        {"pair": "ADA/USDT", "vol": "VOL: 7575818.91", "price": "0.2183", "change": "-0.14%", "green": False},
+        {"pair": "BCH/USDT", "vol": "VOL: 3053870.7", "price": "259.43", "change": "+1.33%", "green": True},
+        {"pair": "DASH/USDT", "vol": "VOL: 41411014.51", "price": "68.119", "change": "+4.00%", "green": True},
+        {"pair": "DOGE/USDT", "vol": "VOL: 37503078.67", "price": "0.09067", "change": "+1.13%", "green": True},
+        {"pair": "DOT/USDT", "vol": "VOL: 1715520.28", "price": "0.956", "change": "+4.60%", "green": True},
+        {"pair": "FIL/USDT", "vol": "VOL: 5219958", "price": "0.7988", "change": "+1.40%", "green": True},
+        {"pair": "LINK/USDT", "vol": "VOL: 9726291.9", "price": "12.192", "change": "+1.20%", "green": True},
+        {"pair": "LTC/USDT", "vol": "VOL: 7164582.25", "price": "54.155", "change": "-0.97%", "green": False},
+    ]
+    
+    for p in pairs:
+        c1, c2, c3 = st.columns([2, 2, 1])
+        c1.markdown(f"**{p['pair']}**<br><span class='sub-text'>{p['vol']}</span>", unsafe_allow_html=True)
+        c2.write(f"**{p['price']}**")
+        color_class = "green-text" if p["green"] else "red-text"
+        c3.markdown(f"<span class='{color_class}'>{p['change']}</span>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin:5px 0; border-color:#2b2f36;'>", unsafe_allow_html=True)
+
+# 3. ვაჭრობა
+elif st.session_state.tab == "ვაჭრობა":
+    st.markdown("### BTC / USDT `-0.06%`")
+    
+    cols = st.columns(4)
+    cols[0].button("60s")
+    cols[1].button("120s")
+    cols[2].button("5min")
+    cols[3].button("10min")
+    
+    st.markdown("**ბრძანების დასრულების დრო:** `25 s` | `12:38~12:39`")
+    
+    chart_data = pd.DataFrame(
+        np.random.randn(20, 1) + 79784.45,
+        columns=['Price']
+    )
+    st.line_chart(chart_data)
+    
+    st.markdown("#### პრომო-კოდის გააქტიურება")
+    promo_input = st.text_input("შეიყვანეთ პრომო-კოდი", key="promo_code")
+    if st.button("დადასტურება"):
+        if promo_input == "2045Q13TI" and not st.session_state.used_promo:
+            st.session_state.balance += 11
+            st.session_state.used_promo = True
+            st.success("პრომო-კოდი გააქტიურდა! +11 USDT დაგერიცხათ.")
+        elif st.session_state.used_promo:
+            st.warning("ეს პრომო-კოდი უკვე გამოყენებულია!")
+        else:
+            st.error("არასწორი პრომო-კოდი!")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        st.button("📈 CALL  52.56%")
+    with btn_col2:
+        st.button("📉 PUT  55.44%")
+
+# 4. სისტემა
+elif st.session_state.tab == "სისტემა":
+    st.markdown("### სისტემა")
+    
+    system_menu = [
+        "❓ დახმარების ცენტრი",
+        "📰 სიახლეების ცენტრი",
+        "📢 სისტემის განცხადება",
+        "ℹ️ ჩვენს შესახებ",
+        "💬 ონლაინ სერვისი",
+        "🌐 ენა",
+        "☁️ APP გადამოწერა",
+        "🔢 ვერსიის ნომერი: 2.3.9"
+    ]
+    
+    for item in system_menu:
+        st.markdown(f"""
+        <div class="card-box" style="display:flex; justify-content:space-between;">
+            <span>{item}</span>
+            <span>></span>
+        </div>
+        """, unsafe_allow_html=True)
+
+# 5. აქტივები
+elif st.session_state.tab == "აქტივები":
+    st.markdown("### აქტივები")
+    
+    st.markdown(f"""
+    <div class="purple-card">
+        <span style="opacity:0.8;">ანგარიშის მთლიანი აქტივები 👁️</span>
+        <h1 style="margin: 5px 0;">{st.session_state.balance:.2f} USDT</h1>
+        <small>დღის შემოსავალი: 0 🔄</small>
+    </div>
+    """, unsafe_allow_html=True)
     
     c1, c2, c3, c4 = st.columns(4)
-    c1.button("🔄\nგამოტანა", key="h_out", use_container_width=True)
-    c2.button("📥\nჩარიცხვა", key="h_in", use_container_width=True)
-    c3.button("⚡\nსწრაფი გაცვლა", key="h_ex", use_container_width=True)
-    c4.button("🔲\nუფრო მეტი", key="h_more", use_container_width=True)
+    c1.button("📥 ჩარიცხვა")
+    c2.button("🔄 გამოტანა")
+    c3.button("⚡ სწრაფი გაცვლა")
+    c4.button("➡️ გადარიცხვა")
     
-    st.markdown("---")
-    st.subheader("ზრდის რეიტინგი")
-    st.markdown("""
-    | სავაჭრო წყვილი | ბოლო ფასი | 24ს ფასის ცვლილება |
-    | :--- | :--- | :--- |
-    | **DASH** / USDT | 74.518 | <span class="badge-green">+13.77%</span> |
-    | **FIL** / USDT | 0.8058 | <span class="badge-green">+2.28%</span> |
-    | **BCH** / USDT | 261.62 | <span class="badge-green">+2.18%</span> |
-    """, unsafe_allow_html=True)
-
-# ----------------- 2. ბაზრები -----------------
-with tab_markets:
-    st.subheader("დერივატივების კონტრაქტი")
-    markets_data = [
-        ("BTC/USDT", "79784.47", "-0.06%", False),
-        ("ETH/USDT", "2507.18", "+1.08%", True),
-        ("ADA/USDT", "0.2213", "+1.24%", True),
-        ("BCH/USDT", "261.62", "+2.18%", True),
-        ("DASH/USDT", "74.534", "+13.79%", True),
-    ]
-    for pair, price, change, is_pos in markets_data:
-        m1, m2, m3 = st.columns([2, 2, 1])
-        m1.write(f"**{pair}**")
-        m2.write(f"${price}")
-        m3.markdown(f'<span class="{"badge-green" if is_pos else "badge-red"}">{change}</span>', unsafe_allow_html=True)
-        st.divider()
-
-# ----------------- 3. ვაჭრობა -----------------
-with tab_trade:
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
-        "კონტრაქტის ბრძანება", "ისტორიული ბრძანებები", "მომწივიეს მე", "მოსდევი გეგმა"
-    ])
+    st.markdown("#### ჩემი ანგარიში")
     
-    with sub_tab1:
-        st.subheader("BTC / USDT  -0.06%")
-        t1, t2, t3, t4 = st.columns(4)
-        t1.button("60s", type="primary", use_container_width=True)
-        t2.button("120s", use_container_width=True)
-        t3.button("5min", use_container_width=True)
-        t4.button("10min", use_container_width=True)
-        st.metric(label="უკუთვლა", value="50 s")
-    
-    with sub_tab2:
-        st.info("ისტორია ცარიელია")
-
-    # 3.1 "მომწივიეს მე" სექცია - კოდის შეყვანა
-    with sub_tab3:
-        b1, b2 = st.columns(2)
-        b1.button("➕ დაწყება მოსდევი", key="m1", type="primary", use_container_width=True)
-        b2.button("📑 მოსდევი ისტორია", key="m2", use_container_width=True)
-        
-        st.write("")
-        promo_code = st.text_input("გთხოვთ შეიყვანოთ მოსდევი კოდი:", placeholder="მაგ: 2045Q13TI")
-        
-        if st.button("დადასტურება", type="primary"):
-            if promo_code.strip() == "2045Q13TI":
-                # პროცენტის გაანგარიშება: ყოველ გამოყენებაზე ემატება +5%
-                bonus_percent = st.session_state.use_count * 0.05
-                added_amount = round(11 * (1 + bonus_percent), 2)
-                
-                st.session_state.total_assets += added_amount
-                st.session_state.daily_income += added_amount
-                st.session_state.use_count += 1
-                
-                st.success(f"კოდი წარმატებით გააქტიურდა! დაგერიცხათ: ${added_amount} (ბონუს პროცენტი: {int(bonus_percent*100)}%)")
-            else:
-                st.error("არასწორი კოდი!")
-        
-        st.markdown('<div class="empty-state">🏢<br>მონაცემები არ არის</div>', unsafe_allow_html=True)
-
-    # 3.2 "მოსდევი გეგმა" სექცია
-    with sub_tab4:
-        p1, p2 = st.columns(2)
-        p1.button("➕ დაწყება მოსდევი", key="p1", type="primary", use_container_width=True)
-        p2.button("📑 ისტორიის გამოქვეყნება", key="p2", use_container_width=True)
-        st.markdown('<div class="empty-state">🏢<br>მონაცემები არ არის</div>', unsafe_allow_html=True)
-
-    # CALL / PUT ღილაკები
-    btn_call, btn_put = st.columns(2)
-    btn_call.button("📈 CALL  53.73%", use_container_width=True)
-    btn_put.button("📉 PUT  54.27%", use_container_width=True)
-
-# ----------------- 4. სისტემა -----------------
-with tab_system:
-    st.subheader("სისტემა")
-    menu = ["❓ დახმარების ცენტრი", "📰 სიახლეების ცენტრი", "📢 სისტემის განცხადება", "ℹ️ ჩვენს შესახებ", "💬 ონლაინ სერვისი", "🌐 ენა", "☁️ APP გადმოწერა"]
-    for item in menu:
-        st.button(item, use_container_width=True)
-    st.caption("ვერსიის ნომერი: 2.3.9")
-
-# ----------------- 5. აქტივები -----------------
-with tab_assets:
     st.markdown(f"""
-        <div class="balance-card">
-            <small>ანგარიშის მთლიანი აქტივები 👁️</small>
-            <h1 style="margin: 5px 0;">{st.session_state.total_assets:.2f}</h1>
-            <small>დღის შემოსავალი: {st.session_state.daily_income:.2f} 🔄</small>
-        </div>
+    <div class="card-box">
+        <small class="sub-text">სპოტ ვალუტა</small>
+        <h3 style="margin:0;">0.00</h3>
+    </div>
+    <div class="card-box">
+        <small class="sub-text">ვადიანი კონტრაქტები</small>
+        <h3 style="margin:0;">{st.session_state.balance:.2f}</h3>
+    </div>
+    <div class="card-box">
+        <small class="sub-text">მუდმივი კონტრაქტები</small>
+        <h3 style="margin:0;">0.00</h3>
+    </div>
     """, unsafe_allow_html=True)
-    
-    a1, a2, a3, a4 = st.columns(4)
-    a1.button("📥\nჩარიცხვა", key="a_in", use_container_width=True)
-    a2.button("🔄\nგამოტანა", key="a_out", use_container_width=True)
-    a3.button("⚡\nსწრაფი გაცვლა", key="a_ex", use_container_width=True)
-    a4.button("📲\nგადარიცხვა", key="a_tr", use_container_width=True)
-    
-    st.markdown("---")
-    st.write("**ჩემი ანგარიში**")
-    st.info("სპოტ ვალუტა: **0.00**")
-    st.success(f"ვადიანი კონტრაქტები: **{st.session_state.total_assets:.2f}**")
-    st.info("მუდმივი კონტრაქტები: **0.00**")
