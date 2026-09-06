@@ -4,14 +4,10 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-# გვერდის ძირითადი პარამეტრები
-st.set_page_config(
-    page_title="DIABLO",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# გვერდის პარამეტრები
+st.set_page_config(page_title="DIABLO", layout="wide", initial_sidebar_state="collapsed")
 
-# ----------------- CSS Сტილები (ზუსტი მობილური დიზაინი) -----------------
+# ----------------- ზუსტი მობილური CSS სტილები -----------------
 st.markdown("""
 <style>
     /* მთლიანი ფონი */
@@ -28,7 +24,7 @@ st.markdown("""
         margin: 0 auto !important;
     }
 
-    /* Top Bar - DIABLO ლოგო */
+    /* Top Bar - DIABLO */
     .top-header {
         display: flex;
         justify-content: space-between;
@@ -51,7 +47,7 @@ st.markdown("""
         gap: 15px;
     }
 
-    /* ბარათები */
+    /* ბარათების სტილი */
     .card-box {
         background-color: #181a20;
         border-radius: 12px;
@@ -60,16 +56,26 @@ st.markdown("""
         border: 1px solid #2b2f36;
     }
     
+    /* თანხის დახატული ბარათი */
     .purple-card {
-        background: linear-gradient(135deg, #9333ea 0%, #6b21a8 100%);
+        background: linear-gradient(135deg, #7e22ce 0%, #581c87 100%);
         border-radius: 16px;
         padding: 22px;
         color: white;
         margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(147, 51, 234, 0.3);
+        box-shadow: 0 4px 15px rgba(126, 34, 206, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    .crypto-bg-icon {
+        position: absolute;
+        right: -10px;
+        bottom: -15px;
+        font-size: 90px;
+        opacity: 0.15;
     }
 
-    /* Bottom Navigation - ფიქსირებული ქვედა ბარი */
+    /* Bottom Navigation - წერტილების/მოსანიშნების გარეშე */
     div[data-testid="stRadio"] > label { display: none !important; }
     div[data-testid="stRadio"] > div {
         position: fixed !important;
@@ -81,7 +87,7 @@ st.markdown("""
         z-index: 999999 !important;
         display: flex !important;
         justify-content: space-around !important;
-        padding: 10px 0 14px 0 !important;
+        padding: 12px 0 16px 0 !important;
         margin: 0 auto !important;
         max-width: 500px !important;
     }
@@ -97,13 +103,13 @@ st.markdown("""
     div[data-testid="stRadio"] label div[data-testid="stMarkdownContainer"] p {
         color: #848e9c !important;
         font-size: 11px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         text-align: center !important;
         margin: 0 !important;
     }
     div[data-testid="stRadio"] label[aria-checked="true"] div[data-testid="stMarkdownContainer"] p {
         color: #a855f7 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
     /* ღილაკები */
@@ -118,7 +124,7 @@ st.markdown("""
         font-size: 13px;
     }
     
-    /* CALL / PUT სავაჭრო ღილაკები */
+    /* CALL / PUT ღილაკები */
     .call-btn button {
         background-color: #0ecb81 !important;
         color: white !important;
@@ -134,7 +140,7 @@ st.markdown("""
         padding: 12px !important;
     }
     
-    /* ტექსტების ფერები */
+    /* ფერები */
     .green-text { color: #0ecb81; font-weight: bold; }
     .red-text { color: #f6465d; font-weight: bold; }
     .sub-text { color: #848e9c; font-size: 12px; }
@@ -152,10 +158,13 @@ st.markdown("""
 # ----------------- სესიის მონაცემები -----------------
 if "balance" not in st.session_state:
     st.session_state.balance = 2226.72
-if "used_promo" not in st.session_state:
-    st.session_state.used_promo = False
+if "used_promos" not in st.session_state:
+    st.session_state.used_promos = set()
 
-# ----------------- ტოპ ბარი (DIABLO) -----------------
+# ვალიდური პრომო-კოდების სია
+VALID_PROMOS = ["2045Q13TI", "203V0FL1E", "201JFEKBI", "201CMTUUA"]
+
+# ----------------- ტოპ ბარი -----------------
 st.markdown("""
 <div class="top-header">
     <div class="diablo-logo">DIABLO</div>
@@ -241,7 +250,7 @@ elif selected_tab == "ბაზრები":
         col3.markdown(f"<span class='{color_class}'>{p['change']}</span>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:6px 0; border-color:#1e2329;'>", unsafe_allow_html=True)
 
-# ----------------- 3. ვაჭრობა (იაპონური სანთლები) -----------------
+# ----------------- 3. ვაჭრობა -----------------
 elif selected_tab == "ვაჭრობა":
     st.markdown("<h3 style='margin:0;'>BTC / USDT <span class='red-text' style='font-size:16px;'>-0.06%</span></h3>", unsafe_allow_html=True)
     
@@ -268,26 +277,18 @@ elif selected_tab == "ვაჭრობა":
     low_p = np.minimum(open_p, close_p) - np.abs(np.random.randn(25) * 8)
 
     fig = go.Figure(data=[go.Candlestick(
-        x=dates,
-        open=open_p,
-        high=high_p,
-        low=low_p,
-        close=close_p,
-        increasing_line_color='#0ecb81',
-        increasing_fillcolor='#0ecb81',
-        decreasing_line_color='#f6465d',
-        decreasing_fillcolor='#f6465d'
+        x=dates, open=open_p, high=high_p, low=low_p, close=close_p,
+        increasing_line_color='#0ecb81', increasing_fillcolor='#0ecb81',
+        decreasing_line_color='#f6465d', decreasing_fillcolor='#f6465d'
     )])
 
     fig.update_layout(
         template="plotly_dark",
-        paper_bgcolor="#0b0e11",
-        plot_bgcolor="#0b0e11",
+        paper_bgcolor="#0b0e11", plot_bgcolor="#0b0e11",
         margin=dict(l=5, r=5, t=5, b=5),
         xaxis_rangeslider_visible=False,
-        height=300,
-        yaxis=dict(gridcolor="#1e2329"),
-        xaxis=dict(gridcolor="#1e2329")
+        height=290,
+        yaxis=dict(gridcolor="#1e2329"), xaxis=dict(gridcolor="#1e2329")
     )
     
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -296,12 +297,14 @@ elif selected_tab == "ვაჭრობა":
     promo_input = st.text_input("პრომო-კოდი", key="promo_code", label_visibility="collapsed", placeholder="შეიყვანეთ პრომო-კოდი")
     
     if st.button("დადასტურება"):
-        if promo_input == "2045Q13TI" and not st.session_state.used_promo:
-            st.session_state.balance += 11
-            st.session_state.used_promo = True
-            st.success("პრომო-კოდი წარმატებით გააქტიურდა! +11 USDT")
-        elif st.session_state.used_promo:
-            st.warning("პრომო-კოდი უკვე გამოყენებულია!")
+        code_clean = promo_input.strip()
+        if code_clean in VALID_PROMOS:
+            if code_clean not in st.session_state.used_promos:
+                st.session_state.balance += 11.0
+                st.session_state.used_promos.add(code_clean)
+                st.success(f"პრომო-კოდი {code_clean} წარმატებით გააქტიურდა! +11 USDT")
+            else:
+                st.warning("ეს პრომო-კოდი უკვე გამოყენებულია!")
         else:
             st.error("არასწორი პრომო-კოდი!")
 
@@ -339,15 +342,19 @@ elif selected_tab == "სისტემა":
         </div>
         """, unsafe_allow_html=True)
 
-# ----------------- 5. აქტივები -----------------
+# ----------------- 5. აქტივები (დახატული თანხის ბარათი) -----------------
 elif selected_tab == "აქტივები":
     st.markdown("<h3 style='margin-bottom:15px;'>აქტივები</h3>", unsafe_allow_html=True)
     
+    # ლამაზი დახატული ბალანსის ბარათი კრიპტო იკონით
     st.markdown(f"""
     <div class="purple-card">
-        <span style="opacity:0.85; font-size:13px;">ანგარიშის მთლიანი აქტივები 👁️</span>
-        <h1 style="margin: 8px 0; font-size:28px;">{st.session_state.balance:.2f} USDT</h1>
-        <small style="opacity:0.85;">დღის შემოსავალი: 0 🔄</small>
+        <div class="crypto-bg-icon">💲</div>
+        <span style="opacity:0.9; font-size:13px; font-weight:500;">ანგარიშის მთლიანი აქტივები 👁️</span>
+        <h1 style="margin: 10px 0 6px 0; font-size:32px; font-weight:800; letter-spacing:0.5px;">
+            {st.session_state.balance:.2f} <span style="font-size:18px; font-weight:500;">USDT</span>
+        </h1>
+        <small style="opacity:0.85; font-size:12px;">≈ ${st.session_state.balance:.2f} USD &nbsp;|&nbsp; დღის შემოსავალი: 0.00 🔄</small>
     </div>
     """, unsafe_allow_html=True)
     
@@ -362,14 +369,14 @@ elif selected_tab == "აქტივები":
     st.markdown(f"""
     <div class="card-box">
         <small class="sub-text">სპოტ ვალუტა</small>
-        <h3 style="margin:4px 0 0 0; font-size:18px;">0.00</h3>
+        <h3 style="margin:4px 0 0 0; font-size:18px;">0.00 USDT</h3>
     </div>
     <div class="card-box">
         <small class="sub-text">ვადიანი კონტრაქტები</small>
-        <h3 style="margin:4px 0 0 0; font-size:18px;">{st.session_state.balance:.2f}</h3>
+        <h3 style="margin:4px 0 0 0; font-size:18px; color:#a855f7;">{st.session_state.balance:.2f} USDT</h3>
     </div>
     <div class="card-box">
         <small class="sub-text">მუდმივი კონტრაქტები</small>
-        <h3 style="margin:4px 0 0 0; font-size:18px;">0.00</h3>
+        <h3 style="margin:4px 0 0 0; font-size:18px;">0.00 USDT</h3>
     </div>
     """, unsafe_allow_html=True)
