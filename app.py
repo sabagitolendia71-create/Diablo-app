@@ -4,37 +4,39 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-# გვერდის პარამეტრები
 st.set_page_config(page_title="DIABLO", layout="wide", initial_sidebar_state="collapsed")
 
-# ----------------- CSS: Streamlit-ის ქვედა ზოლის გაქრობა & მობილური დიზაინი -----------------
+# ----------------- SESSION STATE -----------------
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "Trade"
+if "balance" not in st.session_state:
+    st.session_state.balance = 2226.72
+if "used_promos" not in st.session_state:
+    st.session_state.used_promos = set()
+
+VALID_PROMOS = ["2045Q13TI", "203V0FL1E", "201JFEKBI", "201CMTUUA"]
+
+# ----------------- STYLES -----------------
 st.markdown("""
 <style>
-    /* 1. Streamlit-ის ქვედა "Manage app" ზოლისა და ფუტერის სრული დამალვა */
+    /* Streamlit-ის ნაგულისხმევი ელემენტების დამალვა */
     header, footer, #MainMenu { visibility: hidden !important; height: 0 !important; }
-    div[data-testid="stStatusWidget"], 
-    .viewerBadge_container__163eb,
-    iframe[title="streamlit_app_badge"],
-    .stApp > footer,
-    div[class*="viewerBadge"] { 
-        display: none !important; 
-        visibility: hidden !important;
-    }
+    div[data-testid="stStatusWidget"], .viewerBadge_container__163eb { display: none !important; }
 
-    /* 2. ფონი და კონტეინერი */
     .stApp {
         background-color: #0b0e14 !important;
         color: #ffffff !important;
     }
 
+    /* ძირითადი კონტეინერის დაშორება ქვედა მენიუსგან */
     .block-container {
         padding-top: 0.5rem !important;
-        padding-bottom: 110px !important; /* ქვედა მენიუსთვის საკმარისი ადგილი, რომ არაფერი დაიფაროს */
+        padding-bottom: 120px !important; 
         max-width: 480px !important;
         margin: 0 auto !important;
     }
 
-    /* 3. Top Header */
+    /* Top Header */
     .top-header {
         display: flex;
         justify-content: space-between;
@@ -64,14 +66,8 @@ st.markdown("""
         font-weight: 800;
         letter-spacing: 1px;
     }
-    .header-right-icons {
-        color: #94a3b8;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
 
-    /* 4. Banner & Announcements */
+    /* Banner & Announcement */
     .hero-banner {
         background: linear-gradient(180deg, #111827 0%, #0b0e14 100%);
         border: 1px solid #1e293b;
@@ -79,20 +75,8 @@ st.markdown("""
         padding: 24px 20px;
         margin-bottom: 15px;
     }
-    .hero-sub {
-        color: #00dc82;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        margin-bottom: 6px;
-    }
-    .hero-title {
-        color: #ffffff;
-        font-size: 22px;
-        font-weight: 800;
-        line-height: 1.2;
-        margin: 0;
-    }
+    .hero-sub { color: #00dc82; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .hero-title { color: #ffffff; font-size: 22px; font-weight: 800; margin: 0; }
 
     .announcement-bar {
         background-color: #111827;
@@ -107,7 +91,7 @@ st.markdown("""
         border: 1px solid #1e293b;
     }
 
-    /* 5. Quick Grid Cards */
+    /* Quick Cards */
     .quick-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -120,84 +104,18 @@ st.markdown("""
         border-radius: 12px;
         padding: 14px 8px;
         text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
     }
-    .quick-label {
-        color: #e2e8f0;
-        font-size: 12px;
-        margin-top: 6px;
-    }
+    .quick-label { color: #e2e8f0; font-size: 12px; margin-top: 6px; }
 
-    /* 6. ბარათები და ელემენტები */
-    .card-box {
-        background-color: #111827;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
-        border: 1px solid #1e293b;
-    }
     .green-card {
         background: linear-gradient(135deg, #059669 0%, #047857 100%);
         border-radius: 16px;
         padding: 22px;
         color: white;
         margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);
     }
 
-    /* 7. Radio Button-ების სრული გადაკეთება Tab Bar-ად (წერტილების გარეშე) */
-    div[data-testid="stRadio"] > label { 
-        display: none !important; 
-    }
-    
-    div[data-testid="stRadio"] > div {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        background-color: #0f172a !important;
-        border-top: 1px solid #1e293b !important;
-        z-index: 9999999 !important;
-        display: flex !important;
-        justify-content: space-around !important;
-        padding: 12px 0 18px 0 !important;
-        margin: 0 auto !important;
-        max-width: 480px !important;
-    }
-    
-    /* წერტილების სრული წაშლა */
-    div[data-testid="stRadio"] label {
-        background-color: transparent !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        cursor: pointer !important;
-    }
-    
-    div[data-testid="stRadio"] label div[role="radio"], 
-    div[data-testid="stRadio"] label input {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-    }
-
-    div[data-testid="stRadio"] label div[data-testid="stMarkdownContainer"] p {
-        color: #64748b !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        text-align: center !important;
-        margin: 0 !important;
-    }
-
-    div[data-testid="stRadio"] label[aria-checked="true"] div[data-testid="stMarkdownContainer"] p {
-        color: #00dc82 !important;
-        font-weight: 700 !important;
-    }
-
-    /* ღილაკების სტილი */
+    /* Buttons */
     .stButton>button {
         width: 100%;
         border-radius: 8px;
@@ -210,7 +128,48 @@ st.markdown("""
     
     .call-btn button { background-color: #00dc82 !important; color: #0b0e14 !important; font-size: 15px !important; font-weight: bold !important; padding: 12px !important; }
     .put-btn button { background-color: #ef4444 !important; color: white !important; font-size: 15px !important; font-weight: bold !important; padding: 12px !important; }
+
+    /* CUSTOM BOTTOM NAVIGATION CONTAINER */
+    .nav-spacer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background-color: #090d16;
+        border-top: 1px solid #1e293b;
+        z-index: 999990;
+        max-width: 480px;
+        margin: 0 auto;
+    }
     
+    /* Streamlit-ის სვეტების გასწორება ქვედა ნავიგაციისთვის */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
+        position: fixed !important;
+        bottom: 12px !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 999999 !important;
+        max-width: 460px !important;
+        margin: 0 auto !important;
+        background-color: transparent !important;
+    }
+
+    /* Custom Navigation Buttons */
+    button[key^="nav_"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #64748b !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        padding: 4px 0 !important;
+        box-shadow: none !important;
+    }
+
+    button[key^="nav_"]:hover {
+        color: #00dc82 !important;
+    }
+
     .green-text { color: #00dc82; font-weight: bold; }
     .red-text { color: #ef4444; font-weight: bold; }
     .sub-text { color: #64748b; font-size: 12px; }
@@ -218,36 +177,24 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- Session State -----------------
-if "balance" not in st.session_state:
-    st.session_state.balance = 2226.72
-if "used_promos" not in st.session_state:
-    st.session_state.used_promos = set()
-
-VALID_PROMOS = ["2045Q13TI", "203V0FL1E", "201JFEKBI", "201CMTUUA"]
-
-# ----------------- Top Header -----------------
+# ----------------- TOP HEADER -----------------
 st.markdown("""
 <div class="top-header">
     <div class="brand-box">
         <div class="logo-d">D</div>
         <div class="diablo-title">DIABLO</div>
     </div>
-    <div class="header-right-icons">
+    <div style="color: #94a3b8; display: flex; gap: 16px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M5 8l6 6M4 14l6-6 2 2M2 5h12M9 2v3M15 11l6 9M21 11l-6 9"/></svg>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ----------------- Bottom Tab Navigation -----------------
-tabs = ["Home", "Market", "Trade", "Assets", "Mine"]
-selected_tab = st.radio("", tabs, horizontal=True)
+# ----------------- PAGES CONTENT -----------------
+tab = st.session_state.active_tab
 
-# ----------------- PAGES -----------------
-
-# 1. HOME
-if selected_tab == "Home":
+if tab == "Home":
     st.markdown("""
     <div class="hero-banner">
         <div class="hero-sub">TRADE SMARTER</div>
@@ -257,24 +204,23 @@ if selected_tab == "Home":
     <div class="announcement-bar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         <span>Welcome to DIABLO – your digital asset trading...</span>
-        <span style="margin-left:auto; color:#64748b;">›</span>
     </div>
     
     <div class="quick-grid">
         <div class="quick-card">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
             <div class="quick-label">Deposit</div>
         </div>
         <div class="quick-card">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
             <div class="quick-label">Markets</div>
         </div>
         <div class="quick-card">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             <div class="quick-label">News</div>
         </div>
         <div class="quick-card">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00dc82" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
             <div class="quick-label">Service</div>
         </div>
     </div>
@@ -295,8 +241,7 @@ if selected_tab == "Home":
         col3.markdown(f"<span class='green-bg-tag'>{item['change']}</span>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:8px 0; border-color:#1e293b;'>", unsafe_allow_html=True)
 
-# 2. MARKET
-elif selected_tab == "Market":
+elif tab == "Market":
     st.markdown("<h4 style='margin-bottom:15px; font-size:16px;'>Derivatives Market</h4>", unsafe_allow_html=True)
     
     pairs = [
@@ -315,8 +260,7 @@ elif selected_tab == "Market":
         col3.markdown(f"<span class='{color_class}'>{p['change']}</span>", unsafe_allow_html=True)
         st.markdown("<hr style='margin:6px 0; border-color:#1e293b;'>", unsafe_allow_html=True)
 
-# 3. TRADE
-elif selected_tab == "Trade":
+elif tab == "Trade":
     st.markdown("<h3 style='margin:0;'>BTC / USDT <span class='red-text' style='font-size:16px;'>-0.06%</span></h3>", unsafe_allow_html=True)
     
     cols = st.columns(4)
@@ -331,7 +275,6 @@ elif selected_tab == "Trade":
     </div>
     """, unsafe_allow_html=True)
     
-    # გრაფიკი
     dates = [datetime.now() - timedelta(minutes=i) for i in range(25)][::-1]
     np.random.seed(42)
     base_price = 79784.0
@@ -352,14 +295,13 @@ elif selected_tab == "Trade":
         paper_bgcolor="#0b0e14", plot_bgcolor="#0b0e14",
         margin=dict(l=5, r=5, t=5, b=5),
         xaxis_rangeslider_visible=False,
-        height=240,
+        height=230,
         yaxis=dict(gridcolor="#1e293b"), xaxis=dict(gridcolor="#1e293b")
     )
     
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     
-    # პრომო კოდი
-    st.markdown("<h4 style='margin-top:10px; font-size:14px;'>Promo Code Activation</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='margin-top:5px; font-size:14px;'>Promo Code Activation</h4>", unsafe_allow_html=True)
     promo_input = st.text_input("Promo Code", key="promo_code", label_visibility="collapsed", placeholder="Enter Promo Code")
     
     if st.button("Activate Code"):
@@ -385,8 +327,7 @@ elif selected_tab == "Trade":
         st.button("📉 PUT 55.44%")
         st.markdown('</div>', unsafe_allow_html=True)
 
-# 4. ASSETS
-elif selected_tab == "Assets":
+elif tab == "Assets":
     st.markdown("<h3 style='margin-bottom:15px;'>Assets Overview</h3>", unsafe_allow_html=True)
     
     st.markdown(f"""
@@ -405,15 +346,35 @@ elif selected_tab == "Assets":
     with c3: st.button("Swap")
     with c4: st.button("Transfer")
 
-# 5. MINE
-elif selected_tab == "Mine":
+elif tab == "Mine":
     st.markdown("<h3 style='margin-bottom:15px;'>Profile & System</h3>", unsafe_allow_html=True)
     
     system_menu = ["Help Center", "News Center", "System Announcement", "About Us", "Online Service", "Version: 2.3.9"]
     for item in system_menu:
         st.markdown(f"""
-        <div class="card-box" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="background-color:#111827; border-radius:12px; padding:16px; margin-bottom:12px; border:1px solid #1e293b; display:flex; justify-content:space-between;">
             <span style="font-size:14px;">{item}</span>
-            <span style="color:#64748b; font-size:16px;">›</span>
+            <span style="color:#64748b;">›</span>
         </div>
         """, unsafe_allow_html=True)
+
+# ----------------- CUSTOM BOTTOM NAVIGATION (NO COVERING) -----------------
+st.markdown('<div class="nav-spacer"></div>', unsafe_allow_html=True)
+
+nav_cols = st.columns(5)
+
+items = [
+    ("Home", "🏠"),
+    ("Market", "📈"),
+    ("Trade", "🔄"),
+    ("Assets", "💼"),
+    ("Mine", "👤")
+]
+
+for idx, (name, icon) in enumerate(items):
+    with nav_cols[idx]:
+        is_active = (st.session_state.active_tab == name)
+        label = f"{'🟢' if is_active else icon}\n{name}"
+        if st.button(label, key=f"nav_{name}"):
+            st.session_state.active_tab = name
+            st.rerun()
